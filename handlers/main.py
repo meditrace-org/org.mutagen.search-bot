@@ -54,33 +54,38 @@ async def cmd_upload(message: Message):
 
 @router.message(F.text.regexp(r'\d+'), QueryCache.queried)
 async def collect_score(message: Message, state: FSMContext):
-    data = await state.get_data()
-    if data:
-        rows = []
-        query = data["query"]
-        etime = data["execution_time"]
-        num = 0
-        for i in data["result"]:
-            rows.append((
-                int(message.text),
-                query,
-                uuid.UUID(i["uuid"]),
-                i["video_url"],
-                num,
-                etime,
-                datetime.now(),
-                message.from_user.id
-                         ))
-            num += 1
-        insert_result(rows)
 
-        for m in last_message:
-            m.delete()
-        await message.delete()
-        await state.clear()
-        logging.info(f"ROWS IN DB: {count_storage()}")
-    else:
-        await message.answer("Нет данных от сервера")
+    try:
+        data = await state.get_data()
+        if data:
+            rows = []
+            query = data["query"]
+            etime = data["execution_time"]
+            num = 0
+            for i in data["result"]:
+                rows.append((
+                    int(message.text),
+                    query,
+                    uuid.UUID(i["uuid"]),
+                    i["video_url"],
+                    num,
+                    etime,
+                    datetime.now(),
+                    message.from_user.id
+                ))
+                num += 1
+            insert_result(rows)
+
+            for m in last_message:
+                m.delete()
+            await message.delete()
+            await state.clear()
+            logging.info(f"ROWS IN DB: {count_storage()}")
+        else:
+            await message.answer("Нет данных от сервера")
+
+    except Exception as e:
+        await message.answer(f"Возникла ошибка: {e}")
 
 
 @router.message(F.text)
